@@ -1,9 +1,0 @@
-{
-	"game_name": "welp",
-	"game_path": "/home/jodi/Documents/NotPiracy/Games/Rain.World/game/files/RainWorld.exe",
-	"runner": "WineGE",
-	"options": {
-		"gamemode": false,
-		"gamescope": false
-	}
-}

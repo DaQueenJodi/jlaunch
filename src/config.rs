@@ -12,8 +12,7 @@ fn default_gamemode_path() -> String {
 	String::from("/usr/bin/gamemoderun")
 }
 
-
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ExtraOptions {
 	gamescope: bool,
 	#[serde(default = "default_gamescope_path")]
@@ -22,17 +21,28 @@ pub struct ExtraOptions {
 	#[serde(default = "default_gamemode_path")]
 	gamemode_path: String,
 }
+impl Default for ExtraOptions {
+	fn default() -> ExtraOptions {
+		ExtraOptions {
+			gamescope: false,
+			gamescope_path: default_gamescope_path(),
+			gamemode: false,
+			gamemode_path: default_gamemode_path(),
+		}
+	}
+}
 
 #[derive(Deserialize, Debug)]
 struct Config {
 	default_runner: Runner,
 	global_options: ExtraOptions,
 }
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct AppEntry{
 	pub game_name: String,
 	pub game_path: String,
 	pub runner: Runner,
+	#[serde(default)]
 	pub options: ExtraOptions,
 }
 
@@ -70,7 +80,21 @@ impl AppEntry {
 }
 
 
-pub fn get_app(path: &Path) -> AppEntry {
+fn get_app(path: &Path) -> AppEntry {
 	let file = fs::File::open(path).unwrap();
 	serde_json::from_reader(file).unwrap()
+}
+
+pub fn get_apps() -> Vec<AppEntry> {
+	let xdg_dirs = xdg::BaseDirectories::with_prefix("jlaunch").unwrap();
+	let dir = xdg_dirs.get_data_home()
+													 .as_path()
+													 .to_str().unwrap()
+													 .to_string() +
+													 "games";
+	fs::read_dir(dir).unwrap()
+		.map(|x| x.unwrap())
+		.filter(|x| x.file_type().unwrap().is_file())
+		.map(|x| get_app(x.path().as_path()))
+		.collect()
 }
