@@ -1,9 +1,9 @@
 {
 	"game_name": "welp",
-	"game_path": "/usr/bin/neofetch",
-	"runner": "Native",
+	"game_path": "/home/jodi/Documents/NotPiracy/Games/Rain.World/game/files/RainWorld.exe",
+	"runner": "WineGE",
 	"options": {
 		"gamemode": false,
-		"gamescope": true
+		"gamescope": false
 	}
 }
