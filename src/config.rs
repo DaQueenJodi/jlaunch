@@ -1,78 +1,72 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::process::{Command, ExitStatus};
 use crate::runners::Runner;
 use std::path::Path;
 use std::fs;
 
-fn default_gamescope_path() -> String {
-	String::from("/usr/bin/gamescope")
-}
-
-fn default_gamemode_path() -> String {
-	String::from("/usr/bin/gamemoderun")
-}
-
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ExtraOptions {
-	gamescope: bool,
-	#[serde(default = "default_gamescope_path")]
-	gamescope_path: String,
-	gamemode: bool,
-	#[serde(default = "default_gamemode_path")]
-	gamemode_path: String,
+	pub gamescope: bool,
+	pub gamemode: bool,
 }
 impl Default for ExtraOptions {
 	fn default() -> ExtraOptions {
 		ExtraOptions {
 			gamescope: false,
-			gamescope_path: default_gamescope_path(),
 			gamemode: false,
-			gamemode_path: default_gamemode_path(),
 		}
 	}
 }
 
 #[derive(Deserialize, Debug)]
 struct Config {
-	default_runner: Runner,
-	global_options: ExtraOptions,
+	pub default_runner: Runner,
+	pub global_options: ExtraOptions,
 }
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize,  Debug, Clone)]
 pub struct AppEntry{
-	pub game_name: String,
-	pub game_path: String,
+	pub name: String,
+	pub path: String,
 	pub runner: Runner,
 	#[serde(default)]
 	pub options: ExtraOptions,
 }
-
+const GAMEMODE_PATH: &'static str = "/usr/bin/gamemoderun";
+const GAMESCOPE_PATH: &'static str = "/usr/bin/gamescope";
+const WINE_GE_PATH: &'static str = "/wine-ge/bin/wine";
 impl AppEntry {
 	pub fn run(&self) -> ExitStatus {
 		let xdg_dirs = xdg::BaseDirectories::with_prefix("jlaunch").unwrap();
-		let runner_path = xdg_dirs.get_data_home().as_path().to_str().unwrap().to_string() + "runners";
+		let data_home = xdg_dirs.get_data_home().as_path().to_str().unwrap().to_string();
+		let runner_path = data_home.clone() + "runners";
+		let prefix_path = data_home.clone() + "prefixes";
 		let mut args = Vec::new();
 		let options = &self.options; 
 		if options.gamescope {
-			args.push(options.gamescope_path.as_str());
+			args.push(GAMESCOPE_PATH);
 		}
 		if options.gamemode {
-			args.push(&options.gamemode_path.as_str());
+			args.push(GAMEMODE_PATH);
 		}
 		let path;
 		match self.runner {
 			Runner::Native => (),
 			Runner::WineGE => {
-				path = runner_path + "/wine-ge/bin/wine";
+				path = runner_path + WINE_GE_PATH;
 				args.push(&path);
 			},
 			_ => todo!()
 		}
-		args.push(&self.game_path);
+		args.push(&self.path);
 		let mut cmd = Command::new(args[0]);
 		cmd.args(&args[1..]);
-		let parent = Path::new(&self.game_path).parent().unwrap();
+		let parent = Path::new(&self.path).parent().unwrap();
 		println!("setting working directory to {parent:?}..");
-		std::env::set_current_dir(parent);
+		std::env::set_current_dir(parent).unwrap();
+		// set current wine prefix
+		let prefix = format!("{prefix_path}/{}", self.name);
+		std::env::set_var("WINEPREFIX", &prefix);
+		fs::create_dir_all(&prefix).unwrap();
 		println!("done, launching game!");
 		println!("{args:?}");
 		cmd.status().unwrap()

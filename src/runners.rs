@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Debug, Deserialize, Clone)]
+#[derive(PartialEq, Debug, Deserialize, Serialize, Clone)]
 pub enum Runner {
 	Wine,
 	WineGE,

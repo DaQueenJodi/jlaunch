@@ -1,12 +1,7 @@
 use crate::runners::Runner;
 use serde_json::Value;
 use std::str;
-use std::fs;
 use std::process::Command;
-
-fn download_file(url: String) -> Vec<u8> {
-	todo!()
-}
 
 fn get_latest_gh_release(repo: &str) -> Vec<String>  {
 	let url = "https://api.github.com/repos/".to_string() +
