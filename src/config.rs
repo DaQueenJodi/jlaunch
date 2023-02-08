@@ -78,8 +78,7 @@ fn get_app(path: &Path) -> AppEntry {
 	let file = fs::File::open(path).unwrap();
 	serde_json::from_reader(file).unwrap()
 }
-
-pub fn get_apps() -> Vec<AppEntry> {
+fn get_app_files() -> Vec<String> {
 	let xdg_dirs = xdg::BaseDirectories::with_prefix("jlaunch").unwrap();
 	let dir = xdg_dirs.get_data_home()
 													 .as_path()
@@ -87,8 +86,31 @@ pub fn get_apps() -> Vec<AppEntry> {
 													 .to_string() +
 													 "games";
 	fs::read_dir(dir).unwrap()
-		.map(|x| x.unwrap())
-		.filter(|x| x.file_type().unwrap().is_file())
-		.map(|x| get_app(x.path().as_path()))
+		.map(|f| f.unwrap())
+		.filter(|f| f.file_type().unwrap().is_file())
+		.map(|f| f.path()
+				 .as_path()
+				 .to_str()
+				 .unwrap()
+				 .to_string())
 		.collect()
+}
+pub fn get_apps() -> Vec<AppEntry> {
+	get_app_files()
+		.into_iter()
+		.map(|s| get_app(Path::new(&s)))
+		.collect()
+}
+
+pub fn remove_app(name: String) -> Result<(), String> {
+	let files = get_app_files();
+	let pos = files.clone()
+		.into_iter()
+		.map(|s| get_app(Path::new(&s)))
+		.position(|e| e.name == name);
+	match pos {
+		Some(n) => fs::remove_file(&files[n]).unwrap(),
+		None => return Err("could not find the app entry".to_string()),
+	}
+	Ok(())
 }
