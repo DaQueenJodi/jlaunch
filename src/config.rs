@@ -31,9 +31,12 @@ pub struct AppEntry{
 	#[serde(default)]
 	pub options: ExtraOptions,
 }
+
 const GAMEMODE_PATH: &'static str = "/usr/bin/gamemoderun";
 const GAMESCOPE_PATH: &'static str = "/usr/bin/gamescope";
 const WINE_GE_PATH: &'static str = "/wine-ge/bin/wine";
+const TERMINAL: &'static str = "alacritty";
+
 impl AppEntry {
 	pub fn run(&self) -> ExitStatus {
 		let xdg_dirs = xdg::BaseDirectories::with_prefix("jlaunch").unwrap();
@@ -54,7 +57,14 @@ impl AppEntry {
 			Runner::WineGE => {
 				path = runner_path + WINE_GE_PATH;
 				args.push(&path);
+				let prefix = format!("{prefix_path}/{}", self.name);
+				std::env::set_var("WINEPREFIX", &prefix);
+				fs::create_dir_all(&prefix).unwrap();
 			},
+			Runner::Terminal => {
+				args.push(TERMINAL);
+				args.push("-e");
+			}
 			_ => todo!()
 		}
 		args.push(&self.path);
@@ -64,9 +74,6 @@ impl AppEntry {
 		println!("setting working directory to {parent:?}..");
 		std::env::set_current_dir(parent).unwrap();
 		// set current wine prefix
-		let prefix = format!("{prefix_path}/{}", self.name);
-		std::env::set_var("WINEPREFIX", &prefix);
-		fs::create_dir_all(&prefix).unwrap();
 		println!("done, launching game!");
 		println!("{args:?}");
 		cmd.status().unwrap()

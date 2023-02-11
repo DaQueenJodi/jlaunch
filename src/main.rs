@@ -1,78 +1,16 @@
 pub mod config;
 pub mod runners;
 pub mod download;
+pub mod cli;
+use crate::cli::Action;
+use clap::Parser;
+use crate::cli::Args;
 use std::path::Path;
-use clap::{Subcommand, Parser, ValueEnum};
 use crate::config::{ExtraOptions, get_apps, remove_app, AppEntry};
 use crate::runners::Runner;
 use std::process;
 use std::fs;
 use std::io::Write;
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-#[arg(short, long, default_value_t = false)]
-	quiet: bool,
-
-#[command(subcommand)]
-	action: Action,
-}
-#[derive(Parser, Debug, ValueEnum, PartialEq, Eq, Clone)]
-enum DownloadRunner {
-	WineGE,
-	ProtonGE,
-}
-
-#[derive(Parser, Debug, ValueEnum, PartialEq, Eq, Clone)]
-enum AddRunner  {
-	WineGE,
-	ProtonGE,
-	Native,
-}
-
-impl Into<Runner> for AddRunner {
-fn into(self) -> Runner {
-	match self {
-		AddRunner::WineGE => Runner::WineGE,
-		AddRunner::ProtonGE => Runner::WineGE,
-		AddRunner::Native => Runner::Native,
-	}
-}
-}
-
-impl Into<Runner> for DownloadRunner {
-fn into(self) -> Runner {
-	match self {
-		DownloadRunner::WineGE => Runner::WineGE,
-		DownloadRunner::ProtonGE => Runner::ProtonGE,
-	}
-}
-}
-
-#[derive(Subcommand, Debug)]
-enum Action {
-	Download {
-		runner: DownloadRunner
-	},
-	Run {
-		name: String
-	},
-	Add {
-		name: String,
-		path: String,
-		#[arg(long, default_value_t = false)]
-		gamescope: bool,
-		#[arg(long, default_value_t = false)]
-		gamemode: bool,
-		#[arg(short, long)]
-		runner: AddRunner
-	},
-	List,
-	Remove {
-		name: String
-	}
-}
 
 fn main() {
 	let args = Args::parse();
@@ -100,6 +38,23 @@ fn main() {
 				println!("Sorry, there is already an entry for this game, please choose a different name");
 				process::exit(1);
 			}
+			// check if the path is valid and also expand it
+			// TODO: make this expand '~'
+			let path = Path::new(&path);
+			if !path.exists() {
+				println!("this file does not exist!");
+				process::exit(1);
+			}
+			if !path.is_file() {
+				println!("this is not a file");
+				process::exit(1);
+			}
+			// turn it into canonical (absolute) path
+			let path = path.canonicalize().unwrap()
+				.as_os_str()
+				.to_str().unwrap()
+				.to_string();
+
 			let entry = AppEntry {
 				name,
 				path,

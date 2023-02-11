@@ -6,7 +6,7 @@
 # Manual Configuration
 if you want, you can add games as a json file in XDG_DATA_HOME (~/.local/share by default)
 heres a useless example for an entry for `vim`:
-```
+```json
 {
   "name": "vim",
   "path": "/usr/bin/vim",
@@ -17,11 +17,19 @@ heres a useless example for an entry for `vim`:
   }
 }
 ```
+# Integration
+## Dmenu
+make a script like this:
+```sh
+#/bin/sh
+jlaunch list | dmenu $@ | xargs jlaunch run 
+```
 # TODO: (not in any specific order)
 - [x] make it launch games from a config 
 - [x] make it download winege
 - [x] make it have a seperate prefix per game
 - [x] add a cli
+- [x] add dmenu integration
 - [ ] make it automatically download runners when running games or at least warn the user
 - [ ] add a tui
 - [ ] make it download other deps like winetricks locally
